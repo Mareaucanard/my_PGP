@@ -1,9 +1,13 @@
 #!/bin/python3
 
+from rsa import generatekey
 import argparse
 
+def hex_int(x):
+    return int(x, 16)
+
 def parsearg():
-    parser = argparse.ArgumentParser(usage='mypgd [-xor | -aes | -rsa] [-c | -d] [-b] KEY\nthe MESSAGE is read from standard input',description='MyPGP - encryption/decryption tool')
+    parser = argparse.ArgumentParser(usage='mypgd [-xor | -aes | -rsa] [-c | -d] [-b] KEY\nthe MESSAGE is read from standard input', description='MyPGP - encryption/decryption tool')
 
     algorithm_group = parser.add_argument_group("Encryption Algorithm")
     algorithm_group.add_argument("-xor", action="store_true", help="Use Xor encryption")
@@ -15,7 +19,7 @@ def parsearg():
     mode_group.add_argument("-d", action="store_true", help="Decrypt")
 
     parser.add_argument("-b", action="store_true", help="Use batch mode")
-    parser.add_argument("-g", nargs=2, metavar=("P", "Q"),help="for RSA only: generate a public and private key\npair from the prime number P and Q")
+    parser.add_argument("-g", nargs=2, metavar=("P", "Q"), type=hex_int,help="for RSA only: generate a public and private key\npair from the prime number P and Q")
     parser.add_argument("KEY", nargs='?', help="Encryption/Decryption key")
 
     args = parser.parse_args()
@@ -34,7 +38,6 @@ def parsearg():
         parser.error("You can only select one encryption mode: -c (encrypt) or -d (decrypt)")
     return args
 
-
 if __name__ == "__main__":
     try:
         args = parsearg()
@@ -45,9 +48,7 @@ if __name__ == "__main__":
             exit(e.code)
     print(f"Selected algorithm: {'XOR' if args.xor else 'AES' if args.aes else 'RSA'}")
     if args.g:
-        print(f"Generate key pair: {args.g}")
-        print(f"Public key: {args.g[0]}")
-        print(f"Private key: {args.g[1]}")
+        generatekey(args.g[0], args.g[1])
     else:
         print(f"Mode: {'Encrypt' if args.c else 'Decrypt'}")
         print(f"Batch mode: {args.b}")
