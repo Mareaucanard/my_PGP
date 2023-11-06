@@ -4,7 +4,7 @@ import argparse
 
 def parsearg():
     parser = argparse.ArgumentParser(usage='mypgd [-xor | -aes | -rsa] [-c | -d] [-b] KEY\nthe MESSAGE is read from standard input',description='MyPGP - encryption/decryption tool')
-    
+
     algorithm_group = parser.add_argument_group("Encryption Algorithm")
     algorithm_group.add_argument("-xor", action="store_true", help="Use Xor encryption")
     algorithm_group.add_argument("-aes", action="store_true", help="Use Aes encryption")
@@ -16,7 +16,7 @@ def parsearg():
 
     parser.add_argument("-b", action="store_true", help="Use batch mode")
     parser.add_argument("KEY", help="Encryption/Decryption key")
-    
+
     args = parser.parse_args()
 
     if not (args.xor or args.aes or args.rsa):
