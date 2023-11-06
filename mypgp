@@ -1,6 +1,11 @@
 #!/bin/python3
 
 import argparse
+from utils import flatten
+from xor import apply_xor
+from aes import apply_aes
+from sys import stdin
+from os import set_blocking
 
 def parsearg():
     parser = argparse.ArgumentParser(usage='mypgd [-xor | -aes | -rsa] [-c | -d] [-b] KEY\nthe MESSAGE is read from standard input',description='MyPGP - encryption/decryption tool')
@@ -30,6 +35,15 @@ def parsearg():
         parser.error("You can only select one encryption mode: -c (encrypt) or -d (decrypt)")
     return args
 
+def get_input(block_mode: bool, key: bytearray) -> bytearray:
+    if block_mode:
+        set_blocking(stdin.fileno(), False)
+        message = stdin.read(len(key) * 2)
+        set_blocking(stdin.fileno(), True)
+    else:
+        message = stdin.read()
+    return flatten(message)
+
 
 if __name__ == "__main__":
     try:
@@ -39,7 +53,13 @@ if __name__ == "__main__":
             exit(84)
         else:
             exit(e.code)
-    print(f"Selected algorithm: {'XOR' if args.xor else 'AES' if args.aes else 'RSA'}")
-    print(f"Mode: {'Encrypt' if args.c else 'Decrypt'}")
-    print(f"Batch mode: {args.b}")
-    print(f"Key: {args.KEY}")
+    key = flatten(args.KEY)
+
+    if (args.xor):
+        message = get_input(args.b, key)
+        print(apply_xor(message, key))
+    elif (args.aes):
+        message = get_input(args.a, key)
+        apply_aes(message, key)
+    else:
+        ...
