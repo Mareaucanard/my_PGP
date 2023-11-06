@@ -1,0 +1,45 @@
+#!/bin/python3
+
+import argparse
+
+def parsearg():
+    parser = argparse.ArgumentParser(usage='mypgd [-xor | -aes | -rsa] [-c | -d] [-b] KEY\nthe MESSAGE is read from standard input',description='MyPGP - encryption/decryption tool')
+    
+    algorithm_group = parser.add_argument_group("Encryption Algorithm")
+    algorithm_group.add_argument("-xor", action="store_true", help="Use Xor encryption")
+    algorithm_group.add_argument("-aes", action="store_true", help="Use Aes encryption")
+    algorithm_group.add_argument("-rsa", action="store_true", help="Use Rsa encryption")
+
+    mode_group = parser.add_argument_group("Encryption Mode")
+    mode_group.add_argument("-c", action="store_true", help="Encrypt")
+    mode_group.add_argument("-d", action="store_true", help="Decrypt")
+
+    parser.add_argument("-b", action="store_true", help="Use batch mode")
+    parser.add_argument("KEY", help="Encryption/Decryption key")
+    
+    args = parser.parse_args()
+
+    if not (args.xor or args.aes or args.rsa):
+        parser.error("You must specify an encryption algorithm: -xor, -aes, or -rsa")
+    if (args.xor and (args.aes or args.rsa)) or (args.aes and (args.xor or args.rsa)):
+        parser.error("You can only select one encryption algorithm: -xor, -aes, or -rsa")
+
+    if not (args.c or args.d):
+        parser.error("You must specify an encryption mode: -c (encrypt) or -d (decrypt)")
+    if args.c and args.d:
+        parser.error("You can only select one encryption mode: -c (encrypt) or -d (decrypt)")
+    return args
+
+
+if __name__ == "__main__":
+    try:
+        args = parsearg()
+    except SystemExit as e:
+        if e.code == 2:
+            exit(84)
+        else:
+            exit(e.code)
+    print(f"Selected algorithm: {'XOR' if args.xor else 'AES' if args.aes else 'RSA'}")
+    print(f"Mode: {'Encrypt' if args.c else 'Decrypt'}")
+    print(f"Batch mode: {args.b}")
+    print(f"Key: {args.KEY}")
