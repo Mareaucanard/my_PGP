@@ -1,5 +1,6 @@
 #!/bin/python3
 import math
+import random
 
 def lcm(a, b):
     return abs(a*b)
@@ -41,11 +42,15 @@ def is_prime(n):
     return True
 
 def calculate_e(phi):
+    e_list = []
     for i in range(1, phi) :
         if math.gcd(i, phi) == 1 and is_prime(i):
-            e = i
-            return e
-    return e
+            e_list.append(i)
+        if len(e_list) == 10000:
+            break
+    print(len(e_list))
+    r = random.SystemRandom()
+    return e_list[r.randint(0, len(e_list))]
 
 def calculate_d(e, n):
     lNCF =  [i for i in range(1, n) if math.gcd(i, n) == 1].__len__()
