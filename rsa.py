@@ -55,10 +55,12 @@ def calculate_d(e, n):
     return mod_inverse(e, n)
 
 def generatekey(p, q):
+    if not (is_prime(p) and is_prime(q)):
+        print("p and q must be prime numbers")
+        exit(84)
     n = p * q
     phi = lcm(p-1, q-1)
     e = calculate_e(phi)
-    e = 65537
     d = calculate_d(e, phi)
 
     print(f"Public key: {rev_hex(hex(e)[2:])}-{rev_hex(hex(n)[2:])}")
@@ -69,7 +71,7 @@ def crypt_rsa(key, message):
     e = int(rev_hex(key[0]), 16)
     n = int(rev_hex(key[1]), 16)
     message = int(message, 16)
-    rmessage = (message ** e) % n
+    rmessage = pow(message, e, n)
     print(f"{rev_hex(hex(rmessage)[2:])}")
 
 def decrypt_rsa(key, message):
@@ -77,5 +79,5 @@ def decrypt_rsa(key, message):
     d = int(rev_hex(key[0]), 16)
     n = int(rev_hex(key[1]), 16)
     message = int(rev_hex(message), 16)
-    rmessage = pow(message, d) % n
+    rmessage = pow(message, d, n)
     print(f"{rev_hex(hex(rmessage)[2:])}")
