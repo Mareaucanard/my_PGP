@@ -48,19 +48,34 @@ def calculate_e(phi):
             e_list.append(i)
         if len(e_list) == 10000:
             break
-    print(len(e_list))
     r = random.SystemRandom()
     return e_list[r.randint(0, len(e_list))]
 
 def calculate_d(e, n):
-    lNCF =  [i for i in range(1, n) if math.gcd(i, n) == 1].__len__()
-    return mod_inverse(e, lNCF)
+    return mod_inverse(e, n)
 
 def generatekey(p, q):
     n = p * q
     phi = lcm(p-1, q-1)
     e = calculate_e(phi)
-    d = calculate_d(e, n)
+    e = 65537
+    d = calculate_d(e, phi)
 
     print(f"Public key: {rev_hex(hex(e)[2:])}-{rev_hex(hex(n)[2:])}")
     print(f"Private key: {rev_hex(hex(d)[2:])}-{rev_hex(hex(n)[2:])}")
+
+def crypt_rsa(key, message):
+    key = key.split("-")
+    e = int(rev_hex(key[0]), 16)
+    n = int(rev_hex(key[1]), 16)
+    message = int(message, 16)
+    rmessage = (message ** e) % n
+    print(f"{rev_hex(hex(rmessage)[2:])}")
+
+def decrypt_rsa(key, message):
+    key = key.split("-")
+    d = int(rev_hex(key[0]), 16)
+    n = int(rev_hex(key[1]), 16)
+    message = int(rev_hex(message), 16)
+    rmessage = pow(message, d) % n
+    print(f"{rev_hex(hex(rmessage)[2:])}")

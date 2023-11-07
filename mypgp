@@ -1,6 +1,6 @@
 #!/bin/python3
 
-from rsa import generatekey
+from rsa import generatekey, crypt_rsa, decrypt_rsa
 import argparse
 
 def hex_int(x):
@@ -46,10 +46,11 @@ if __name__ == "__main__":
             exit(84)
         else:
             exit(e.code)
-    print(f"Selected algorithm: {'XOR' if args.xor else 'AES' if args.aes else 'RSA'}")
     if args.g:
         generatekey(args.g[0], args.g[1])
-    else:
-        print(f"Mode: {'Encrypt' if args.c else 'Decrypt'}")
-        print(f"Batch mode: {args.b}")
-        print(f"Key: {args.KEY}")
+    if args.rsa and args.c:
+        message = input()
+        crypt_rsa(args.KEY, message)
+    elif args.rsa and args.d:
+        message = input()
+        decrypt_rsa(args.KEY, message)
