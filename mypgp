@@ -1,14 +1,18 @@
 #!/bin/python3
 
+from rsa import generatekey, crypt_rsa, decrypt_rsa
 import argparse
-from utils import flatten, chunks_padded, show_hex, string_to_hex_string, hex_string_to_string
+from utils import flatten, chunks_padded, show_hex, string_to_hex_string, hex_string_to_string, rev_hex, chunks
 from xor import apply_xor
 from aes import encrypt_aes, decrypt_aes
 from sys import stdin
 from os import set_blocking
 
+def hex_int(x):
+    return int(x, 16)
+
 def parsearg():
-    parser = argparse.ArgumentParser(usage='mypgd [-xor | -aes | -rsa] [-c | -d] [-b] KEY\nthe MESSAGE is read from standard input',description='MyPGP - encryption/decryption tool')
+    parser = argparse.ArgumentParser(usage='mypgd [-xor | -aes | -rsa] [-c | -d] [-b] KEY\nthe MESSAGE is read from standard input', description='MyPGP - encryption/decryption tool')
 
     algorithm_group = parser.add_argument_group("Encryption Algorithm")
     algorithm_group.add_argument("-xor", action="store_true", help="Use Xor encryption")
@@ -21,14 +25,14 @@ def parsearg():
     mode_group.add_argument("-d", action="store_true", help="Decrypt")
 
     parser.add_argument("-b", action="store_true", help="Use batch mode")
-    parser.add_argument("-g", nargs=2, metavar=("P", "Q"),help="for RSA only: generate a public and private key\npair from the prime number P and Q")
+    parser.add_argument("-g", nargs=2, metavar=("P", "Q"), type=hex_int,help="for RSA only: generate a public and private key\npair from the prime number P and Q")
     parser.add_argument("KEY", nargs='?', help="Encryption/Decryption key")
 
     args = parser.parse_args()
 
     if not (args.xor or args.aes or args.rsa or args.pgp):
         parser.error("You must specify an encryption algorithm: -xor, -aes, -rsa, or -pgp")
-    if (sum[args.xor, args.aes, args.rsa, args.pgp] > 1):
+    if (sum([args.xor, args.aes, args.rsa, args.pgp]) > 1):
         parser.error("You can only select one encryption algorithm: -xor, -aes, -rsa, or -pgp")
     if args.rsa and args.b:
         parser.error("You can not use -b with -rsa")
@@ -53,7 +57,6 @@ def get_input(block_mode: bool, key: bytearray) -> bytearray:
         message = stdin.read()
     return flatten(message)
 
-
 if __name__ == "__main__":
     try:
         args = parsearg()
@@ -62,7 +65,14 @@ if __name__ == "__main__":
             exit(84)
         else:
             exit(e.code)
-
+    if args.g:
+        generatekey(args.g[0], args.g[1])
+    if args.rsa and args.c:
+        message = input()
+        print(crypt_rsa(args.KEY, message))
+    elif args.rsa and args.d:
+        message = input()
+        print(decrypt_rsa(args.KEY, message))
     if (args.xor):
         key = flatten(args.KEY)
         message = get_input(args.b, key)
@@ -75,10 +85,16 @@ if __name__ == "__main__":
     elif (args.pgp):
         message = input()
         if (args.c):
-            encrypted = crypt_rsa(args.KEY, string_to_hex_string(message))
+            (_, n) = args.KEY.split('-')
+            encrypted = ""
+            for block in chunks(string_to_hex_string(message), len(n)):
+                encrypted += crypt_rsa(args.KEY, block)
             print(encrypted)
         else:
-            decrypted = decrypt_rsa(args.KEY, hex_string_to_string(message))
+            (_, n) = args.KEY.split('-')
+            decrypted = ""
+            for block in chunks(message, len(n)):
+                decrypted += decrypt_rsa(args.KEY, block)
             print(decrypted)
-    else:
-        ...
+            print(hex_string_to_string(decrypted))
+
