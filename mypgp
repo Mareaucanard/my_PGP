@@ -20,7 +20,8 @@ def parsearg():
     mode_group.add_argument("-d", action="store_true", help="Decrypt")
 
     parser.add_argument("-b", action="store_true", help="Use batch mode")
-    parser.add_argument("KEY", help="Encryption/Decryption key")
+    parser.add_argument("-g", nargs=2, metavar=("P", "Q"),help="for RSA only: generate a public and private key\npair from the prime number P and Q")
+    parser.add_argument("KEY", nargs='?', help="Encryption/Decryption key")
 
     args = parser.parse_args()
 
@@ -28,10 +29,13 @@ def parsearg():
         parser.error("You must specify an encryption algorithm: -xor, -aes, or -rsa")
     if (args.xor and (args.aes or args.rsa)) or (args.aes and (args.xor or args.rsa)):
         parser.error("You can only select one encryption algorithm: -xor, -aes, or -rsa")
-
-    if not (args.c or args.d):
+    if args.rsa and args.b:
+        parser.error("You can not use -b with -rsa")
+    if args.g and args.rsa == False:
+        parser.error("You can not use -g without -rsa")
+    if (not (args.c or args.d)) and (not args.g):
         parser.error("You must specify an encryption mode: -c (encrypt) or -d (decrypt)")
-    if args.c and args.d:
+    if (args.c and args.d) and (not args.g):
         parser.error("You can only select one encryption mode: -c (encrypt) or -d (decrypt)")
     return args
 
