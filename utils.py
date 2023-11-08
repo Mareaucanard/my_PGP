@@ -1,5 +1,5 @@
-from sys import stderr
-
+from sys import stderr, argv
+from binascii import unhexlify
 
 def flatten(key: str) -> bytearray:
     try:
@@ -24,3 +24,14 @@ def chunks(lst, n):
     """Iterator for processing list chunk by chunk"""
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
+
+def chunks_padded(lst, n):
+    for item in chunks(lst, n):
+        item = item + bytes([0] * (n - len(item)))
+        yield item
+
+def string_to_hex_string(s):
+    return ''.join(f"{ord(x):02x}" for x in s)
+
+def hex_string_to_string(s):
+    return unhexlify(s).decode('ascii')

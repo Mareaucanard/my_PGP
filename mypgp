@@ -1,7 +1,7 @@
 #!/bin/python3
 
 import argparse
-from utils import flatten, chunks, show_hex
+from utils import flatten, chunks_padded, show_hex, string_to_hex_string, hex_string_to_string
 from xor import apply_xor
 from aes import encrypt_aes, decrypt_aes
 from sys import stdin
@@ -14,6 +14,7 @@ def parsearg():
     algorithm_group.add_argument("-xor", action="store_true", help="Use Xor encryption")
     algorithm_group.add_argument("-aes", action="store_true", help="Use Aes encryption")
     algorithm_group.add_argument("-rsa", action="store_true", help="Use Rsa encryption")
+    algorithm_group.add_argument("-pgp", action="store_true", help="PGP mode")
 
     mode_group = parser.add_argument_group("Encryption Mode")
     mode_group.add_argument("-c", action="store_true", help="Encrypt")
@@ -25,10 +26,10 @@ def parsearg():
 
     args = parser.parse_args()
 
-    if not (args.xor or args.aes or args.rsa):
-        parser.error("You must specify an encryption algorithm: -xor, -aes, or -rsa")
-    if (args.xor and (args.aes or args.rsa)) or (args.aes and (args.xor or args.rsa)):
-        parser.error("You can only select one encryption algorithm: -xor, -aes, or -rsa")
+    if not (args.xor or args.aes or args.rsa or args.pgp):
+        parser.error("You must specify an encryption algorithm: -xor, -aes, -rsa, or -pgp")
+    if (sum[args.xor, args.aes, args.rsa, args.pgp] > 1):
+        parser.error("You can only select one encryption algorithm: -xor, -aes, -rsa, or -pgp")
     if args.rsa and args.b:
         parser.error("You can not use -b with -rsa")
     if args.g and args.rsa == False:
@@ -37,6 +38,10 @@ def parsearg():
         parser.error("You must specify an encryption mode: -c (encrypt) or -d (decrypt)")
     if (args.c and args.d) and (not args.g):
         parser.error("You can only select one encryption mode: -c (encrypt) or -d (decrypt)")
+    if (args.pgp and args.g):
+        parser.error("You can not use -g with -pgp")
+    if (args.pgp and args.b):
+        parser.error("You can not use -b with -pgp")
     return args
 
 def get_input(block_mode: bool, key: bytearray) -> bytearray:
@@ -57,14 +62,23 @@ if __name__ == "__main__":
             exit(84)
         else:
             exit(e.code)
-    key = flatten(args.KEY)
 
     if (args.xor):
+        key = flatten(args.KEY)
         message = get_input(args.b, key)
         print(apply_xor(message, key))
     elif (args.aes):
+        key = flatten(args.KEY)
         message = get_input(args.b, key)
         f = encrypt_aes if args.c else decrypt_aes
-        print(''.join(show_hex(f(block, key)) for block in chunks(message, 16)))
+        print(''.join(show_hex(f(block, key)) for block in chunks_padded(message, 16)))
+    elif (args.pgp):
+        message = input()
+        if (args.c):
+            encrypted = crypt_rsa(args.KEY, string_to_hex_string(message))
+            print(encrypted)
+        else:
+            decrypted = decrypt_rsa(args.KEY, hex_string_to_string(message))
+            print(decrypted)
     else:
         ...
