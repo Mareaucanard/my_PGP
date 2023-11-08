@@ -1,9 +1,9 @@
 #!/bin/python3
 
 import argparse
-from utils import flatten
+from utils import flatten, chunks, show_hex
 from xor import apply_xor
-from aes import apply_aes
+from aes import encrypt_aes, decrypt_aes
 from sys import stdin
 from os import set_blocking
 
@@ -59,7 +59,8 @@ if __name__ == "__main__":
         message = get_input(args.b, key)
         print(apply_xor(message, key))
     elif (args.aes):
-        message = get_input(args.a, key)
-        apply_aes(message, key)
+        message = get_input(args.b, key)
+        f = encrypt_aes if args.c else decrypt_aes
+        print(''.join(show_hex(f(block, key)) for block in chunks(message, 16)))
     else:
         ...

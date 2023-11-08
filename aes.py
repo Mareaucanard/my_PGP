@@ -1,6 +1,6 @@
 from itertools import cycle
-from utils import die, flatten
-from copy import copy, deepcopy
+from utils import die
+from copy import deepcopy
 
 
 def xor(a: bytearray, b: bytearray):
@@ -23,10 +23,6 @@ def sub(v: bytearray):
 
 def inv_sub(v: bytearray):
     return [s_box_inverse[byte] for byte in v]
-
-
-def show_bytearray(v):
-    return ', '.join(f"{x}" for x in v)
 
 
 def shift(state: bytearray):
@@ -116,21 +112,6 @@ def rev_mix(state):
     return result
 
 
-def show_hex(v) -> str:
-    res = []
-    i = 0
-    while i < len(v):
-        l = []
-        for j in range(4):
-            l.append(f"{v[i]:02x}")
-            i = i + 1
-        res.append(''.join(l))
-    return ' '.join(res)
-
-# def __iter__(self):
-#     return self.v.__iter__()
-
-
 s_box = [
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
     0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
@@ -188,7 +169,7 @@ def key_expansion(key: bytearray) -> [bytearray]:
 
     for i in range(4):
         result[i] = [key[4 * i], key[4 * i + 1],
-                           key[4 * i + 2], key[4 * i + 3]]
+                     key[4 * i + 2], key[4 * i + 3]]
 
     for i in range(4, 44):
 
@@ -213,7 +194,6 @@ def encrypt_aes(message: bytearray, key: bytearray):
     state = sub(state)
     state = shift(state)
     state = xor(state, round_key[10])
-    print(show_bytearray(state))
     return state
 
 
@@ -231,20 +211,4 @@ def decrypt_aes(message: bytearray, key: bytearray):
     state = inv_sub(state)
     state = un_shift(state)
     state = xor(state, round_key[10])
-    print(show_bytearray(state))
     return state
-
-
-message = [0x14, 0x15, 0x16, 0x17, 0x10, 0x11, 0x12,
-           0x13, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1F, 0x20]
-key = [0x10, 0x50, 0xa9, 0x25, 0x15, 0xd6, 0x55, 0x55,
-       0xd4, 0x50, 0xeb, 0x45, 0x68, 0x21, 0xe9, 0x81]
-v = bytes(key)
-w = bytes(message)
-
-
-def f():
-    print(key)
-    r = key_expansion(key)
-    for i in [0, 1, 5, 9, 10]:
-        print(f"key {i} = {show_bytearray(r[i])}")
