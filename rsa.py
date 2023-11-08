@@ -71,7 +71,6 @@ def crypt_rsa(key, message):
     e = int(rev_hex(key[0]), 16)
     n = int(rev_hex(key[1]), 16)
     message = int(message, 16)
-    print(message, n)
     if message >= n:
         print("Message is too long")
         exit(84)
