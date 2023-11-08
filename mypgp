@@ -2,6 +2,11 @@
 
 from rsa import generatekey, crypt_rsa, decrypt_rsa
 import argparse
+from utils import flatten, chunks, show_hex
+from xor import apply_xor
+from aes import encrypt_aes, decrypt_aes
+from sys import stdin
+from os import set_blocking
 
 def hex_int(x):
     return int(x, 16)
@@ -38,6 +43,15 @@ def parsearg():
         parser.error("You can only select one encryption mode: -c (encrypt) or -d (decrypt)")
     return args
 
+def get_input(block_mode: bool, key: bytearray) -> bytearray:
+    if block_mode:
+        set_blocking(stdin.fileno(), False)
+        message = stdin.read(len(key) * 2)
+        set_blocking(stdin.fileno(), True)
+    else:
+        message = stdin.read()
+    return flatten(message)
+
 if __name__ == "__main__":
     try:
         args = parsearg()
@@ -54,3 +68,12 @@ if __name__ == "__main__":
     elif args.rsa and args.d:
         message = input()
         decrypt_rsa(args.KEY, message)
+    key = flatten(args.KEY)
+    if (args.xor):
+        message = get_input(args.b, key)
+        print(apply_xor(message, key))
+    elif (args.aes):
+        message = get_input(args.b, key)
+        f = encrypt_aes if args.c else decrypt_aes
+        print(''.join(show_hex(f(block, key)) for block in chunks(message, 16)))
+
