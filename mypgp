@@ -5,7 +5,7 @@ import argparse
 from utils import flatten, chunks_padded, show_hex, string_to_hex_string, hex_string_to_string, rev_hex, chunks
 from xor import apply_xor
 from aes import encrypt_aes, decrypt_aes
-from sys import stdin
+from sys import stdin, stderr
 from os import set_blocking
 
 def hex_int(x):
@@ -27,6 +27,7 @@ def parsearg():
     parser.add_argument("-b", action="store_true", help="Use batch mode")
     parser.add_argument("-g", nargs=2, metavar=("P", "Q"), type=hex_int,help="for RSA only: generate a public and private key\npair from the prime number P and Q")
     parser.add_argument("KEY", nargs='?', help="Encryption/Decryption key")
+    parser.add_argument("--debug", action="store_true", help="Show debug information")
 
     args = parser.parse_args()
 
@@ -46,6 +47,8 @@ def parsearg():
         parser.error("You can not use -g with -pgp")
     if (args.pgp and args.b):
         parser.error("You can not use -b with -pgp")
+    if ((args.c or args.d) and args.KEY is None):
+        parser.error("Key missing")
     return args
 
 def get_input(block_mode: bool, key: bytearray) -> bytearray:
@@ -57,7 +60,7 @@ def get_input(block_mode: bool, key: bytearray) -> bytearray:
         message = stdin.read()
     return flatten(message)
 
-if __name__ == "__main__":
+def main():
     try:
         args = parsearg()
     except SystemExit as e:
@@ -81,14 +84,20 @@ if __name__ == "__main__":
         key = flatten(args.KEY)
         message = get_input(args.b, key)
         f = encrypt_aes if args.c else decrypt_aes
+        if (args.debug):
+            print(f"Block size: {16}", file=stderr)
         print(''.join(show_hex(f(block, key)) for block in chunks_padded(message, 16)))
     elif (args.pgp):
         message = input()
         if (args.c):
             (_, n) = args.KEY.split('-')
             encrypted = ""
+            if (args.debug):
+                print(f"Key len is {len(n)}, block size {len(n) // 2}", file=stderr)
+                print(f"Hexadecimal message: {string_to_hex_string(message)}")
             for block in chunks(string_to_hex_string(message), len(n) // 2):
-
+                if (args.debug):
+                    print(f"block {block} => {crypt_rsa(args.KEY, block)}", file=stderr)
                 encrypted += crypt_rsa(args.KEY, block)
             print(encrypted)
         else:
@@ -98,3 +107,8 @@ if __name__ == "__main__":
                 decrypted += decrypt_rsa(args.KEY, block)
             print(hex_string_to_string(decrypted))
 
+if __name__ == "__main__":
+    try:
+        main()
+    except:
+        exit(84)
