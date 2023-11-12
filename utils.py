@@ -34,7 +34,7 @@ def string_to_hex_string(s):
     return ''.join(f"{ord(x):02x}" for x in s)
 
 def hex_string_to_string(s):
-    return unhexlify(s).decode('ascii')
+    return unhexlify(s).decode('utf-8')
 
 def rev_hex(my_hex):
     if len(my_hex) % 2 != 0:
@@ -43,3 +43,8 @@ def rev_hex(my_hex):
         return my_hex
     else:
         return rev_hex(my_hex[2:]) + rev_hex(my_hex[:2])
+
+def rev_hex_string(x):
+    tmp = bytearray.fromhex(x)
+    tmp.reverse()
+    return show_hex(tmp)
