@@ -1,8 +1,5 @@
-export K1="2f08ddd3"
-export K2="1e8a1e0b"
-
 I=0
-X=$(./mypgp -rsa -g $K1 $K2)
+X=$(time ./mypgp -pgp -genkey)
 echo "$X"
 for word in $X;
 do

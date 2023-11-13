@@ -1,5 +1,5 @@
-from sys import stderr, argv
 from binascii import unhexlify
+
 
 def flatten(key: str) -> bytearray:
     try:
@@ -30,10 +30,10 @@ def chunks_padded(lst, n):
         yield item
 
 def string_to_hex_string(s):
-    return ''.join(f"{ord(x):02x}" for x in s)
+    return s.encode('utf-8').hex()
 
 def hex_string_to_string(s):
-    return unhexlify(s).decode('utf-8')
+    return ''.join([chr(x) for x in unhexlify(s)])
 
 def rev_hex(my_hex):
     if len(my_hex) % 2 != 0:

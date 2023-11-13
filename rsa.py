@@ -20,32 +20,58 @@ def mod_inverse(a, m):
     else:
         return (x % m + m) % m
 
-def is_prime(n):
-    if n <= 1:
+def is_prime(n, k=8):
+    """Uses miller-rabin
+    see https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test
+    is probabilistic, but still has more than 99.99999% chance of success
+    """
+    rand_instance = random.SystemRandom()
+    lower_primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]
+    if n < 2:
         return False
-    if n <= 3:
+    if n in lower_primes:
         return True
-    if n % 2 == 0 or n % 3 == 0:
-        return False
-    i = 5
-    while i * i <= n:
-        if n % i == 0 or n % (i + 2) == 0:
+    for p in lower_primes:
+        if n % p == 0:
             return False
-        i += 6
+
+    s, d = 0, n-1
+    while d % 2 == 0:
+        s, d = s + 1, d // 2
+    for _ in range(k):
+        x = pow(rand_instance.randint(2, n-1), d, n)
+        if x == 1 or x == n-1:
+            continue
+        for _ in range(1, s):
+            x = (x * x) % n
+            if x == 1:
+                return False
+            if x == n-1:
+                break
+        else:
+            return False
     return True
 
 def calculate_e(phi):
-    e_list = []
-    for i in range(1, phi) :
-        if math.gcd(i, phi) == 1 and is_prime(i):
-            e_list.append(i)
-        if len(e_list) == 10000:
-            break
     r = random.SystemRandom()
-    return e_list[r.randint(0, len(e_list))]
+
+    while True:
+        i =  r.randint(1, phi)
+        if math.gcd(i, phi) == 1 and is_prime(i):
+            return i
 
 def calculate_d(e, n):
     return mod_inverse(e, n)
+
+def generate_prime(key_length: int = 1024):
+    r = random.SystemRandom()
+
+    low = 2 ** (key_length - 1) + 1
+    high = 2 ** key_length - 1
+    candidate = r.randint(low, high)
+    while not is_prime(candidate, 1):
+        candidate = r.randint(low, high)
+    return candidate
 
 def generatekey(p, q):
     if not (is_prime(p) and is_prime(q)):
@@ -68,7 +94,8 @@ def crypt_rsa(key, message):
         print("Message is too long")
         exit(84)
     rmessage = pow(message, e, n)
-    return f"{rev_hex(hex(rmessage)[2:])}"
+    return rev_hex(f"{rmessage:x}")
+
 
 def decrypt_rsa(key, message):
     key = key.split("-")
@@ -76,4 +103,4 @@ def decrypt_rsa(key, message):
     n = int(rev_hex(key[1]), 16)
     message = int(rev_hex(message), 16)
     rmessage = pow(message, d, n)
-    return f"{(hex(rmessage)[2:])}"
+    return f"{rmessage:x}"
