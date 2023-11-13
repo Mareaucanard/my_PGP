@@ -21,6 +21,11 @@ jobs:
         fi
         ./mypgp --help
 
+    - name: run_tests
+      run: |
+        pip install coverage
+        python3 -m coverage run -m unittest test/unit_tests.py
+
   publish:
     needs: compile
     runs-on: ubuntu-latest

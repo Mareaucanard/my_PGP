@@ -12,11 +12,6 @@ def rot(v: bytearray):
     return tail + [head]
 
 
-def rev_rot(v: bytearray):
-    *head, tail = v
-    return [tail] + head
-
-
 def sub(v: bytearray):
     return [s_box[byte] for byte in v]
 
@@ -41,20 +36,6 @@ def un_shift(state: bytearray):
     newState[10], newState[14], newState[2], newState[6] = state[2], state[6], state[10], state[14]
     newState[15], newState[3], newState[7], newState[11] = state[3], state[7], state[11], state[15]
     return newState
-
-
-def matrix_product(m1, m2):
-    result = [0] * 4
-    width = 1
-    height = 4
-
-    for i in range(width):
-        for j in range(height):
-            tmp = 0
-            for k in range(4):
-                tmp ^= m1[k][j] * m2[k]
-            result[j] = tmp
-    return result
 
 
 mix_matrix = [[2, 3, 1, 1],

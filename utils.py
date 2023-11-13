@@ -9,8 +9,7 @@ def flatten(key: str) -> bytearray:
 
 
 def die(message):
-    print(message, file=stderr)
-    exit(84)
+    raise ValueError(message)
 
 
 def show_hex(v) -> str:
@@ -44,7 +43,5 @@ def rev_hex(my_hex):
     else:
         return rev_hex(my_hex[2:]) + rev_hex(my_hex[:2])
 
-def rev_hex_string(x):
-    tmp = bytearray.fromhex(x)
-    tmp.reverse()
-    return show_hex(tmp)
+def pad_string(s, n):
+    return s + '0' * (n - len(s))
