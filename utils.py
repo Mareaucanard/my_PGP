@@ -2,9 +2,6 @@
 Mostly for handling hex string conversion and padding
 """
 
-from binascii import unhexlify
-
-
 def flatten(key: str) -> bytearray:
     """Tries to transform an hex string into a bytearray
     On fail raises a ValueError"""
@@ -36,22 +33,23 @@ def chunks(lst, n):
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
 
-def chunks_padded(lst, n):
+def chunks_padded(lst, n, identity = bytes([0])):
     """Returns a generator of chunks of size n
     If the final chunk is not long enough to be of size n, pads 0 bytes at the end
     """
     for item in chunks(lst, n):
-        item = item + bytes([0] * (n - len(item)))
+        item = item + identity * (n - len(item))
         yield item
 
 def string_to_hex_string(s):
     """Takes an utf-8 string and return the hexadecimal representation
     reciprocal of hex_string_to_string
+    Stops when an ETX is encountered
 
     >>> string_to_hex_string("Hello, world!")
     "48656c6c6f2c20776f726c6421"
     """
-    return s.encode('utf-8').hex()
+    return ''.join([f"{ord(c):02x}" for c in s])
 
 def hex_string_to_string(s):
     """Takes an hex representation string and returns a string
@@ -60,7 +58,7 @@ def hex_string_to_string(s):
     >>> string_to_hex_string("48656c6c6f2c20776f726c6421")
     "Hello, world!"
     """
-    return ''.join([chr(x) for x in unhexlify(s)])
+    return ''.join([chr(int(x, 16)) for x in chunks(s, 2)])
 
 def rev_hex(my_hex):
     """Inverses endian"""
@@ -71,6 +69,6 @@ def rev_hex(my_hex):
     else:
         return rev_hex(my_hex[2:]) + rev_hex(my_hex[:2])
 
-def pad_string(s, n):
+def pad_string(s, n, identity = '0'):
     """Adds 0 to the end of the string"""
-    return s + '0' * (n - len(s))
+    return s + identity * (n - len(s))

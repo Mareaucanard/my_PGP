@@ -2,10 +2,11 @@
 
 from rsa import generatekey, crypt_rsa, decrypt_rsa, generate_prime
 import argparse
+from math import ceil
 from utils import flatten, chunks_padded, show_hex, string_to_hex_string, hex_string_to_string, pad_string, chunks
 from xor import apply_xor
-from aes import encrypt_aes, decrypt_aes
-from sys import stdin, stderr, setrecursionlimit
+from aes import encrypt_aes, decrypt_aes, generate_key
+from sys import stdin, stderr, stdout, setrecursionlimit
 from os import set_blocking
 
 setrecursionlimit(10 ** 5)
@@ -92,29 +93,43 @@ def main():
     elif args.pgp:
         if args.c:
             message = stdin.read()
-            (_, n) = args.KEY.split('-')
+            pgp_key = args.KEY
+            (_, n) = pgp_key.split('-')
             expected_size = len(n)
-            block_size = len(n) // 2
-            if args.debug:
-                print(f"Key len is {expected_size}, block size {block_size}", file=stderr)
-                print(f"Message length is {len(message) * 2 // block_size}", file=stderr)
-                print(f"Plain text is: {(message)}", file=stderr)
-                print(f"Hexadecimal message: {string_to_hex_string(message)}", file=stderr)
-            for block in chunks(string_to_hex_string(message), block_size):
-                tmp = crypt_rsa(args.KEY, block)
-                if args.debug:
-                    print(f"block {block} => {tmp}", file=stderr)
-                print(pad_string(tmp, expected_size), flush=False, end='')
+            pgp_block_size = len(n) // 2
+            aes_key = generate_key()
+            encrypted_key = ""
+            for block in chunks_padded(aes_key, pgp_block_size, identity="0"):
+                tmp = pad_string(crypt_rsa(pgp_key, block), expected_size)
+                tmp = hex_string_to_string(tmp)
+                print(tmp, end='')
+            aes_key = flatten(aes_key)
+            message = flatten(string_to_hex_string(message))
+            for block in chunks_padded(message, 16, identity=bytes([3])):
+                tmp = show_hex(encrypt_aes(block, aes_key))
+                tmp = hex_string_to_string(tmp)
+                print(tmp, end='')
+            stdout.flush()
         elif args.d:
             message = stdin.read()
             (_, n) = args.KEY.split('-')
-            for block in chunks(message, len(n)):
-                tmp = decrypt_rsa(args.KEY, block)
-                if len(tmp) % 2 != 0:
-                    tmp = "0" + tmp
-                if args.debug:
-                    print(f"block {block} => {tmp}", file=stderr)
-                print(hex_string_to_string(tmp), end='')
+            pgp_key = args.KEY
+            expected_size = len(n)
+            pgp_block_size = len(n) // 2
+            key_len = ceil(16 / (pgp_block_size // 2)) * (expected_size // 2)
+            encrypted_key, encrypted_message = message[:key_len], message[key_len:]
+            aes_key = ""
+            for block in chunks(string_to_hex_string(encrypted_key), expected_size):
+                tmp = decrypt_rsa(pgp_key, block)
+                tmp = "0" * (pgp_block_size - len(tmp)) + tmp
+                aes_key += tmp
+            aes_key = flatten(aes_key[:32])
+            for block in chunks_padded(encrypted_message, 16, identity="0"):
+                block = flatten(string_to_hex_string(block))
+                tmp = decrypt_aes(block, aes_key)
+                tmp = ETX_hex_string_to_string(show_hex(tmp))
+                print(tmp, end='')
+            stdout.flush()
         else:
             x = generate_prime()
             y = generate_prime()
@@ -122,6 +137,14 @@ def main():
                 y = generate_prime()
             generatekey(x, y)
 
+def ETX_hex_string_to_string(s):
+    res = ""
+    for num in chunks(s, 2):
+        c = chr(int(num, 16))
+        if c == chr(3):
+            break
+        res += c
+    return res
 
 if __name__ == "__main__":
     try:

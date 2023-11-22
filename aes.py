@@ -1,6 +1,7 @@
 """AES encryption algorithm"""
 from copy import deepcopy
-from utils import die
+from random import SystemRandom
+from utils import die, show_hex
 
 
 s_box = [
@@ -171,7 +172,7 @@ def encrypt_aes(message: bytearray, key: bytearray):
     if len(key) != 16:
         die(f"AES Invalid key, must be 128 bit but was {len(key) * 8}")
     if len(message) != 16:
-        die(f"AES Invalid key, must be 128 bit but was {len(key) * 8}")
+        die(f"AES Invalid key, must be 128 bit but was {len(message) * 8}")
     round_key = key_expansion(key)
     state = xor(message, round_key[0])
     for i in range(1, 10):
@@ -191,7 +192,7 @@ def decrypt_aes(message: bytearray, key: bytearray):
     if len(key) != 16:
         die(f"AES Invalid key, must be 128 bit but was {len(key) * 8}")
     if len(message) != 16:
-        die(f"AES Invalid key, must be 128 bit but was {len(key) * 8}")
+        die(f"AES Invalid key, must be 128 bit but was {len(message) * 8}")
     round_key = key_expansion(key)
     round_key.reverse()
     state = xor(message, round_key[0])
@@ -204,3 +205,8 @@ def decrypt_aes(message: bytearray, key: bytearray):
     state = un_shift(state)
     state = xor(state, round_key[10])
     return state
+
+def generate_key(key_length: int = 16):
+    """Generates a key for aes"""
+    r = SystemRandom()
+    return show_hex([ r.randint(0, 255) for _ in range(key_length)])
