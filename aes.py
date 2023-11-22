@@ -1,96 +1,7 @@
-from itertools import cycle
-from utils import die
+"""AES encryption algorithm"""
 from copy import deepcopy
-
-
-def xor(a: bytearray, b: bytearray):
-    return [v1 ^ v2 for (v1, v2) in zip(a, b)]
-
-
-def rot(v: bytearray):
-    head, *tail = v
-    return tail + [head]
-
-
-def sub(v: bytearray):
-    return [s_box[byte] for byte in v]
-
-
-def inv_sub(v: bytearray):
-    return [s_box_inverse[byte] for byte in v]
-
-
-def shift(state: bytearray):
-    newState = [None] * 16
-    newState[0], newState[4], newState[8], newState[12] = state[0], state[4], state[8], state[12]
-    newState[1], newState[5], newState[9], newState[13] = state[5], state[9], state[13], state[1]
-    newState[2], newState[6], newState[10], newState[14] = state[10], state[14], state[2], state[6]
-    newState[3], newState[7], newState[11], newState[15] = state[15], state[3], state[7], state[11]
-    return newState
-
-
-def un_shift(state: bytearray):
-    newState = [None] * 16
-    newState[0], newState[4], newState[8], newState[12] = state[0], state[4], state[8], state[12]
-    newState[5], newState[9], newState[13], newState[1] = state[1], state[5], state[9], state[13]
-    newState[10], newState[14], newState[2], newState[6] = state[2], state[6], state[10], state[14]
-    newState[15], newState[3], newState[7], newState[11] = state[3], state[7], state[11], state[15]
-    return newState
-
-
-mix_matrix = [[2, 3, 1, 1],
-              [1, 2, 3, 1],
-              [1, 1, 2, 3],
-              [3, 1, 1, 2]]
-
-rev_mix_matrix = [[14, 11, 13, 9],
-                  [9, 14, 11, 13],
-                  [13, 9, 14, 11],
-                  [11, 13, 9, 14]]
-
-
-def gmul(a, b):
-    product = 0
-    for i in range(8):
-        if (b & 1) == 1:
-            product ^= a
-        hi_bit_set = a & 0x80
-        a = (a << 1) & 0xFF
-        if hi_bit_set == 0x80:
-            a ^= 0x1B
-        b >>= 1
-    return product
-
-
-def mix_column(c, mixer):
-    d = [None] * 4
-    for i in range(4):
-        r = mixer[i]
-        d[i] = gmul(c[0], r[0]) ^ gmul(c[1], r[1]) ^ gmul(
-            c[2], r[2]) ^ gmul(c[3], r[3])
-    return d
-
-
-def mix(state):
-    result = deepcopy(state)
-    for i in range(4):
-        indices = [i * 4 + j for j in range(4)]
-        start = [int(state[x]) for x in indices]
-        column = mix_column(start, mix_matrix)
-        for index, value in zip(indices, column):
-            result[index] = value
-    return result
-
-
-def rev_mix(state):
-    result = deepcopy(state)
-    for i in range(4):
-        indices = [i * 4 + j for j in range(4)]
-        start = [int(state[x]) for x in indices]
-        column = mix_column(start, rev_mix_matrix)
-        for index, value in zip(indices, column):
-            result[index] = value
-    return result
+from random import SystemRandom
+from utils import die, show_hex
 
 
 s_box = [
@@ -112,40 +23,133 @@ s_box = [
     0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16
 ]
 
+mix_matrix = [[2, 3, 1, 1],
+              [1, 2, 3, 1],
+              [1, 1, 2, 3],
+              [3, 1, 1, 2]]
+
+rev_mix_matrix = [[14, 11, 13, 9],
+                  [9, 14, 11, 13],
+                  [13, 9, 14, 11],
+                  [11, 13, 9, 14]]
+
 s_box_inverse = [s_box.index(x) for x in range(len(s_box))]
 
-rc = [None]
-for i in range(1, 256):
-    if i == 1:
-        rc.append(1)
-        continue
-    prev = rc[i - 1]
-    if (prev < 128):
-        v = 2 * prev
-    else:
-        v = (2 * prev) ^ 283
-    rc.append(v)
-
-rcon = [None if x == None else [x, 0, 0, 0] for x in rc]
-
-
-def group_by_n(l: list[list], n: int) -> list:
-    result = []
-    tmp = None
-    for i, item in enumerate(l):
-        if i % n == 0 and i != 0:
-            result.append(tmp)
-            tmp = None
-
-        if tmp is None:
-            tmp = item
+def gen_rc(nb_item: int = 256) -> list[None | int]:
+    """Generate a list of rc according to key scheduling
+    First item of the list will always be null"""
+    result = [None]
+    for i in range(1, nb_item):
+        if i == 1:
+            result.append(1)
+            continue
+        prev = result[i - 1]
+        if (prev < 128):
+            v = 2 * prev
         else:
-            tmp += item
-    result.append(tmp)
+            v = (2 * prev) ^ 283
+        result.append(v)
+    return result
+
+rc = gen_rc()
+rcon = [None if x is None else [x, 0, 0, 0] for x in rc]
+
+def xor(a: bytearray, b: bytearray):
+    """Apply xor on two arrays"""
+    return [v1 ^ v2 for (v1, v2) in zip(a, b)]
+
+
+def rot(v: bytearray):
+    """Move every item of the list one place to the left"""
+    head, *tail = v
+    return tail + [head]
+
+
+def sub(v: bytearray):
+    """For every byte of the list, replaces it with the corresponding byte from the S-box"""
+    return [s_box[byte] for byte in v]
+
+
+def inv_sub(v: bytearray):
+    """Undoes the sub operation"""
+    return [s_box_inverse[byte] for byte in v]
+
+
+def shift(state: bytearray):
+    """Moves around the position of items in the list"""
+    new = [None] * 16
+    new[0], new[4], new[8], new[12] = state[0], state[4], state[8], state[12]
+    new[1], new[5], new[9], new[13] = state[5], state[9], state[13], state[1]
+    new[2], new[6], new[10], new[14] = state[10], state[14], state[2], state[6]
+    new[3], new[7], new[11], new[15] = state[15], state[3], state[7], state[11]
+    return new
+
+
+def un_shift(state: bytearray):
+    """Undoes the shift operation"""
+    new = [None] * 16
+    new[0], new[4], new[8], new[12] = state[0], state[4], state[8], state[12]
+    new[5], new[9], new[13], new[1] = state[1], state[5], state[9], state[13]
+    new[10], new[14], new[2], new[6] = state[2], state[6], state[10], state[14]
+    new[15], new[3], new[7], new[11] = state[3], state[7], state[11], state[15]
+    return new
+
+
+def gmul(a, b):
+    """Finite field multiplication"""
+    product = 0
+    for _ in range(8):
+        if (b & 1) == 1:
+            product ^= a
+        hi_bit_set = a & 0x80
+        a = (a << 1) & 0xFF
+        if hi_bit_set == 0x80:
+            a ^= 0x1B
+        b >>= 1
+    return product
+
+
+def mix_column(c, mixer):
+    """Rijndael MixColumns"""
+    d = [None] * 4
+    for i in range(4):
+        r = mixer[i]
+        d[i] = gmul(c[0], r[0]) ^ gmul(c[1], r[1]) ^ gmul(
+            c[2], r[2]) ^ gmul(c[3], r[3])
+    return d
+
+
+def mix(state):
+    """Applies Rijndael mixColumns on every row"""
+    result = deepcopy(state)
+    for i in range(4):
+        indices = [i * 4 + j for j in range(4)]
+        start = [int(state[x]) for x in indices]
+        column = mix_column(start, mix_matrix)
+        for index, value in zip(indices, column):
+            result[index] = value
     return result
 
 
+def rev_mix(state):
+    """Undoes the mix state operation"""
+    result = deepcopy(state)
+    for i in range(4):
+        indices = [i * 4 + j for j in range(4)]
+        start = [int(state[x]) for x in indices]
+        column = mix_column(start, rev_mix_matrix)
+        for index, value in zip(indices, column):
+            result[index] = value
+    return result
+
+
+def group_by_n(l: list[list], n: int) -> list:
+    """Groups a list of lists into a list of lists, take n elements and concat them"""
+    return [sum(l[i:i + n], []) for i in range(0, len(l), n)]
+
+
 def key_expansion(key: bytearray) -> [bytearray]:
+    """See key expansion and key scheduling on google"""
     result = [None] * 44
 
     for i in range(4):
@@ -155,7 +159,7 @@ def key_expansion(key: bytearray) -> [bytearray]:
     for i in range(4, 44):
 
         tmp = result[i - 1]
-        if (i % 4 == 0):
+        if i % 4 == 0:
             tmp = sub(rot(tmp))
             tmp = xor(tmp, rcon[i // 4])
         result[i] = xor(result[i - 4], tmp)
@@ -163,8 +167,12 @@ def key_expansion(key: bytearray) -> [bytearray]:
 
 
 def encrypt_aes(message: bytearray, key: bytearray):
-    if (len(key) != 16):
-        die(f"RSA Invalid key, must be 128 bit but was {len(key) * 8}")
+    """Encrypts a message following the aes algorithm
+    The key and message must be 128 bit or 16 bytes long"""
+    if len(key) != 16:
+        die(f"AES Invalid key, must be 128 bit but was {len(key) * 8}")
+    if len(message) != 16:
+        die(f"AES Invalid key, must be 128 bit but was {len(message) * 8}")
     round_key = key_expansion(key)
     state = xor(message, round_key[0])
     for i in range(1, 10):
@@ -179,8 +187,12 @@ def encrypt_aes(message: bytearray, key: bytearray):
 
 
 def decrypt_aes(message: bytearray, key: bytearray):
-    if (len(key) != 16):
-        die(f"RSA Invalid key, must be 128 bit but was {len(key) * 8}")
+    """Decrypts a message following the aes algorithm
+    The key and message must be 128 bit or 16 bytes long"""
+    if len(key) != 16:
+        die(f"AES Invalid key, must be 128 bit but was {len(key) * 8}")
+    if len(message) != 16:
+        die(f"AES Invalid key, must be 128 bit but was {len(message) * 8}")
     round_key = key_expansion(key)
     round_key.reverse()
     state = xor(message, round_key[0])
@@ -193,3 +205,8 @@ def decrypt_aes(message: bytearray, key: bytearray):
     state = un_shift(state)
     state = xor(state, round_key[10])
     return state
+
+def generate_key(key_length: int = 16):
+    """Generates a key for aes"""
+    r = SystemRandom()
+    return show_hex([ r.randint(0, 255) for _ in range(key_length)])

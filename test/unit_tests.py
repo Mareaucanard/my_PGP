@@ -29,6 +29,8 @@ class TestAes(unittest.TestCase):
 
         self.assertRaises(ValueError, encrypt_aes, flatten(message), "bad key")
         self.assertRaises(ValueError, decrypt_aes, flatten(message), "bad key")
+        self.assertRaises(ValueError, encrypt_aes, "bad message", flatten(key))
+        self.assertRaises(ValueError, decrypt_aes, "bad message", flatten(key))
 
 class TestStringTransforms(unittest.TestCase):
     def f(self, a, b):
