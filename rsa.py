@@ -4,9 +4,13 @@ import random
 from utils import rev_hex
 
 def lcm(a, b):
+    """Calculates the least common multiple of a and b
+    """
     return abs(a*b)
 
 def extended_gcd(a, b):
+    """Calculates the extended greatest common divisor of a and b
+    """
     if a == 0:
         return (b, 0, 1)
     else:
@@ -14,6 +18,8 @@ def extended_gcd(a, b):
         return (gcd, y - (b // a) * x, x)
 
 def mod_inverse(a, m):
+    """Calculates the modular inverse of a mod m
+    """
     gcd, x, y = extended_gcd(a, m)
     if gcd != 1:
         raise ValueError("Modular inverse does not exist")
@@ -53,6 +59,8 @@ def is_prime(n, k=8):
     return True
 
 def calculate_e(phi):
+    """Calculates the public key
+    """
     r = random.SystemRandom()
 
     while True:
@@ -61,9 +69,13 @@ def calculate_e(phi):
             return i
 
 def calculate_d(e, n):
+    """Calculates the private key
+    """
     return mod_inverse(e, n)
 
 def generate_prime(key_length: int = 1024):
+    """Generates a prime number of key_length bits
+    """
     r = random.SystemRandom()
 
     low = 2 ** (key_length - 1) + 1
@@ -74,6 +86,8 @@ def generate_prime(key_length: int = 1024):
     return candidate
 
 def generatekey(p, q):
+    """Generates a RSA keypair from two prime numbers
+    """
     if not (is_prime(p) and is_prime(q)):
         print("p and q must be prime numbers")
         exit(84)
@@ -86,6 +100,8 @@ def generatekey(p, q):
     print(f"Private key: {rev_hex(hex(d)[2:])}-{rev_hex(hex(n)[2:])}")
 
 def crypt_rsa(key, message):
+    """Encrypts a message using RSA
+    """
     key = key.split("-")
     e = int(rev_hex(key[0]), 16)
     n = int(rev_hex(key[1]), 16)
@@ -98,6 +114,8 @@ def crypt_rsa(key, message):
 
 
 def decrypt_rsa(key, message):
+    """Decrypts a message using RSA
+    """
     key = key.split("-")
     d = int(rev_hex(key[0]), 16)
     n = int(rev_hex(key[1]), 16)
